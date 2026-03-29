@@ -46,3 +46,21 @@ fn test_initialize_sets_state_and_prevents_double_init() {
     // Double initialization must fail with AlreadyInitialized
     assert_eq!(client.try_initialize(&Address::generate(&env)), Err(Ok(RecoveryError::AlreadyInitialized)));
 }
+
+#[test]
+fn test_double_reinitialization_exploits() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let contract_id = env.register(IdentityContract, ());
+    let client = IdentityContractClient::new(&env, &contract_id);
+    let owner = Address::generate(&env);
+
+    client.initialize(&owner);
+
+    // Attempting to initialize the contract a second time
+    let hacker = Address::generate(&env);
+    let result = client.try_initialize(&hacker);
+    
+    assert_eq!(result, Err(Ok(RecoveryError::AlreadyInitialized)), "Double re-initialization exploits should revert");
+}
